@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trenchers Radio</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tahoma:wght@400;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Tahoma', sans-serif;
+            background: linear-gradient(135deg, #5A9FD4 0%, #306998 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        
+        .desktop-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #5A9FD4 0%, #306998 100%);
+            z-index: -1;
+        }
+        
+        .radio-container {
+            background: linear-gradient(145deg, #f0f0f0 0%, #d4d4d4 100%);
+            border: 3px solid #8e8e8e;
+            border-top-color: #ffffff;
+            border-left-color: #ffffff;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 
+                inset 2px 2px 5px rgba(255,255,255,0.8),
+                inset -2px -2px 5px rgba(0,0,0,0.3),
+                5px 5px 20px rgba(0,0,0,0.4);
+            width: 500px;
+            height: 350px;
+            position: relative;
+        }
+        
+        .radio-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .radio-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #000080;
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+            margin-bottom: 5px;
+        }
+        
+        .radio-subtitle {
+            font-size: 12px;
+            color: #666;
+            font-style: italic;
+        }
+        
+        .radio-body {
+            display: flex;
+            gap: 20px;
+            height: 220px;
+        }
+        
+        .radio-left {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .radio-right {
+            width: 150px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .display-section {
+            background: #000;
+            border: 2px inset #8e8e8e;
+            border-radius: 8px;
+            height: 80px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .lcd-display {
+            background: linear-gradient(135deg, #1a5d1a 0%, #0d4d0d 100%);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 0 10px #00ff00;
+            animation: lcd-glow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes lcd-glow {
+            from { text-shadow: 0 0 10px #00ff00; }
+            to { text-shadow: 0 0 20px #00ff00, 0 0 30px #00ff00; }
+        }
+        
+        .station-info {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .frequency {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        .song-info {
+            font-size: 10px;
+            opacity: 0.7;
+            text-align: center;
+            margin-top: 5px;
+        }
+        
+        .controls-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex-grow: 1;
+        }
+        
+        .station-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        
+        .station-btn {
+            background: linear-gradient(145deg, #e6e6e6 0%, #cccccc 100%);
+            border: 2px outset #8e8e8e;
+            border-radius: 5px;
+            padding: 8px 12px;
+            font-size: 11px;
+            font-weight: bold;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.1s;
+            font-family: 'Tahoma', sans-serif;
+        }
+        
+        .station-btn:hover {
+            background: linear-gradient(145deg, #f0f0f0 0%, #d4d4d4 100%);
+        }
+        
+        .station-btn:active,
+        .station-btn.active {
+            border: 2px inset #8e8e8e;
+            background: linear-gradient(145deg, #cccccc 0%, #e6e6e6 100%);
+            transform: translateY(1px);
+        }
+        
+        .volume-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .volume-label {
+            font-size: 11px;
+            font-weight: bold;
+            color: #333;
+            text-align: center;
+        }
+        
+        .volume-control {
+            width: 100%;
+            height: 25px;
+            background: #ddd;
+            border: 2px inset #8e8e8e;
+            border-radius: 12px;
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .volume-track {
+            position: absolute;
+            top: 50%;
+            left: 8px;
+            right: 8px;
+            height: 4px;
+            background: linear-gradient(90deg, #666 0%, #999 100%);
+            transform: translateY(-50%);
+            border-radius: 2px;
+        }
+        
+        .volume-thumb {
+            position: absolute;
+            top: 50%;
+            width: 16px;
+            height: 16px;
+            background: linear-gradient(145deg, #f0f0f0 0%, #d4d4d4 100%);
+            border: 2px outset #8e8e8e;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+        
+        .volume-thumb:hover {
+            background: linear-gradient(145deg, #f4f4f4 0%, #d8d8d8 100%);
+        }
+        
+        .volume-thumb:active {
+            border: 2px inset #8e8e8e;
+            background: linear-gradient(145deg, #d4d4d4 0%, #f0f0f0 100%);
+        }
+        
+        .speaker {
+            width: 100%;
+            height: 60px;
+            background: #333;
+            border: 2px inset #8e8e8e;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .speaker-grille {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            background: repeating-linear-gradient(
+                0deg,
+                #444 0px,
+                #444 2px,
+                #222 2px,
+                #222 4px
+            );
+            border-radius: 4px;
+        }
+        
+        .power-led {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 8px;
+            height: 8px;
+            background: #ff0000;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #ff0000;
+            animation: power-blink 2s ease-in-out infinite;
+        }
+        
+        @keyframes power-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        .antenna {
+            position: absolute;
+            top: -20px;
+            right: 20px;
+            width: 3px;
+            height: 40px;
+            background: linear-gradient(180deg, #silver 0%, #gray 100%);
+            border-radius: 1.5px;
+            transform: rotate(15deg);
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+        }
+        
+        .antenna::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -1px;
+            width: 5px;
+            height: 10px;
+            background: #silver;
+            border-radius: 2.5px;
+        }
+        
+        .static-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .static-text {
+            color: white;
+            font-size: 24px;
+            font-family: 'Courier New', monospace;
+            animation: static-flicker 0.1s infinite;
+        }
+        
+        @keyframes static-flicker {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="desktop-background"></div>
+    
+    <div class="radio-container">
+        <div class="antenna"></div>
+        <div class="power-led"></div>
+        
+        <div class="radio-header">
+            <div class="radio-title">TRENCHERS RADIO</div>
+            <div class="radio-subtitle">Windows XP Edition</div>
+        </div>
+        
+        <div class="radio-body">
+            <div class="radio-left">
+                <div class="display-section">
+                    <div class="lcd-display">
+                        <div class="station-info" id="station-name">STATION 1</div>
+                        <div class="frequency" id="frequency">101.5 FM</div>
+                        <div class="song-info" id="song-info">♪ Now Playing: Sample Song ♪</div>
+                    </div>
+                </div>
+                
+                <div class="controls-section">
+                    <div class="station-buttons">
+                        <button class="station-btn active" data-station="0">STATION 1</button>
+                        <button class="station-btn" data-station="1">STATION 2</button>
+                        <button class="station-btn" data-station="2">STATION 3</button>
+                        <button class="station-btn" data-station="3">STATION 4</button>
+                        <button class="station-btn" data-station="4">CLASSIC</button>
+                        <button class="station-btn" data-station="5">JAZZ FM</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="radio-right">
+                <div class="volume-section">
+                    <div class="volume-label">VOLUME</div>
+                    <div class="volume-control" id="volume-control">
+                        <div class="volume-track"></div>
+                        <div class="volume-thumb" id="volume-thumb"></div>
+                    </div>
+                </div>
+                
+                <div class="speaker">
+                    <div class="speaker-grille"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="static-overlay" id="static-overlay">
+        <div class="static-text">TUNING...</div>
+    </div>
+
+    <script>
+        class TrenchersRadio {
+            constructor() {
+                this.currentStation = 0;
+                this.volume = 0.7;
+                this.stations = [
+                    {
+                        name: "STATION 1",
+                        frequency: "101.5 FM",
+                        folder: "station1",
+                        songs: []
+                    },
+                    {
+                        name: "STATION 2", 
+                        frequency: "102.3 FM",
+                        folder: "station2",
+                        songs: []
+                    },
+                    {
+                        name: "STATION 3",
+                        frequency: "103.1 FM", 
+                        folder: "station3",
+                        songs: []
+                    },
+                    {
+                        name: "STATION 4",
+                        frequency: "104.7 FM",
+                        folder: "station4", 
+                        songs: []
+                    },
+                    {
+                        name: "CLASSIC",
+                        frequency: "105.5 FM",
+                        folder: "classic",
+                        songs: []
+                    },
+                    {
+                        name: "JAZZ FM",
+                        frequency: "106.3 FM",
+                        folder: "jazz",
+                        songs: []
+                    }
+                ];
+                
+                this.audioElements = [];
+                this.currentSongIndex = new Array(this.stations.length).fill(0);
+                this.songStartTimes = new Array(this.stations.length).fill(0);
+                
+                // Static sound file (place in same directory as HTML)
+                this.staticSoundUrl = "./static.wav";
+                
+                this.init();
+            }
+            
+            async init() {
+                await this.loadStationSongs();
+                this.createAudioElements();
+                this.setupEventListeners();
+                this.updateDisplay();
+                this.startAllStations();
+                this.updateVolumeDisplay();
+            }
+            
+            async loadStationSongs() {
+                // Simplified approach - try to load common filenames
+                const commonFilenames = [
+                    'jazz1.mp3', 'jazz2.mp3', 'jazz3.mp3', 'jazz4.mp3', 'jazz5.mp3',
+                    'song1.mp3', 'song2.mp3', 'song3.mp3', 'song4.mp3', 'song5.mp3',
+                    'rock1.mp3', 'rock2.mp3', 'rock3.mp3', 'rock4.mp3', 'rock5.mp3',
+                    'pop1.mp3', 'pop2.mp3', 'pop3.mp3', 'pop4.mp3', 'pop5.mp3',
+                    'hiphop1.mp3', 'hiphop2.mp3', 'hiphop3.mp3', 'hiphop4.mp3', 'hiphop5.mp3',
+                    'classical1.mp3', 'classical2.mp3', 'classical3.mp3', 'classical4.mp3', 'classical5.mp3',
+                    '1.mp3', '2.mp3', '3.mp3', '4.mp3', '5.mp3'
+                ];
+
+                // Load songs for each station
+                for (let i = 0; i < this.stations.length; i++) {
+                    const station = this.stations[i];
+                    const folder = station.folder;
+                    
+                    // Try different filename patterns
+                    for (const filename of commonFilenames) {
+                        const filepath = `./${folder}/${filename}`;
+                        
+                        try {
+                            // Test if file exists by creating audio element
+                            const testAudio = new Audio();
+                            const canLoad = await new Promise((resolve) => {
+                                const timeout = setTimeout(() => resolve(false), 1000);
+                                
+                                testAudio.addEventListener('canplaythrough', () => {
+                                    clearTimeout(timeout);
+                                    resolve(true);
+                                }, { once: true });
+                                
+                                testAudio.addEventListener('error', () => {
+                                    clearTimeout(timeout);
+                                    resolve(false);
+                                }, { once: true });
+                                
+                                testAudio.src = filepath;
+                                testAudio.load();
+                            });
+                            
+                            if (canLoad) {
+                                const title = filename.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
+                                station.songs.push({
+                                    title: title,
+                                    artist: station.name,
+                                    url: filepath,
+                                    filename: filename
+                                });
+                                console.log(`Loaded: ${filepath}`);
+                            }
+                        } catch (error) {
+                            // File doesn't exist or can't be loaded
+                        }
+                    }
+                    
+                    // If no songs were loaded, add sample songs that will work
+                    if (station.songs.length === 0) {
+                        // Add some test songs that should work
+                        station.songs = [
+                            {
+                                title: `${station.name} - Track 1`,
+                                artist: station.name,
+                                url: null, // Will be handled as silent
+                                filename: null
+                            },
+                            {
+                                title: `${station.name} - Track 2`,
+                                artist: station.name,
+                                url: null,
+                                filename: null
+                            }
+                        ];
+                        console.log(`No audio files found for ${station.name}. Using placeholder tracks.`);
+                    }
+                }
+            }
+            
+            createAudioElements() {
+                this.stations.forEach((station, stationIndex) => {
+                    const stationAudios = [];
+                    station.songs.forEach((song, songIndex) => {
+                        if (song.url) {
+                            const audio = new Audio();
+                            audio.src = song.url;
+                            audio.loop = false;
+                            audio.preload = 'metadata';
+                            audio.volume = stationIndex === this.currentStation ? this.volume : 0;
+                            audio.crossOrigin = 'anonymous'; // Help with CORS issues
+                            
+                            // Add error handling
+                            audio.addEventListener('error', (e) => {
+                                console.error(`Error loading audio: ${song.url}`, e);
+                            });
+                            
+                            audio.addEventListener('canplay', () => {
+                                console.log(`Audio ready: ${song.url}`);
+                            });
+                            
+                            // When a song ends, play the next one
+                            audio.addEventListener('ended', () => {
+                                this.playNextSong(stationIndex);
+                            });
+                            
+                            stationAudios.push(audio);
+                        } else {
+                            // Create a silent audio element for placeholders
+                            const silentAudio = new Audio();
+                            silentAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAAABAAARKwAAIhYAQACABAAZGF0YQAAAAA='; // 1 second of silence
+                            silentAudio.loop = false;
+                            silentAudio.volume = 0;
+                            
+                            silentAudio.addEventListener('ended', () => {
+                                this.playNextSong(stationIndex);
+                            });
+                            
+                            stationAudios.push(silentAudio);
+                        }
+                    });
+                    this.audioElements.push(stationAudios);
+                });
+                
+                // Create static sound element
+                this.staticAudio = new Audio();
+                this.staticAudio.src = this.staticSoundUrl;
+                this.staticAudio.volume = this.volume;
+                
+                // Add error handling for static sound
+                this.staticAudio.addEventListener('error', () => {
+                    console.log('Static sound file not found, using silent placeholder');
+                    // Create silent static as fallback
+                    this.staticAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAAABAAARKwAAIhYAQACABAAZGF0YQAAAAA=';
+                });
+            }
+            
+            setupEventListeners() {
+                // Station buttons
+                document.querySelectorAll('.station-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const stationIndex = parseInt(e.target.dataset.station);
+                        this.changeStation(stationIndex);
+                    });
+                });
+                
+                // Volume control
+                const volumeControl = document.getElementById('volume-control');
+                const volumeThumb = document.getElementById('volume-thumb');
+                
+                let isDragging = false;
+                
+                const updateVolume = (e) => {
+                    const rect = volumeControl.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const percentage = Math.max(0, Math.min(1, (x - 8) / (rect.width - 16)));
+                    this.volume = percentage;
+                    this.updateVolumeDisplay();
+                    this.updateAudioVolumes();
+                };
+                
+                volumeControl.addEventListener('mousedown', (e) => {
+                    isDragging = true;
+                    updateVolume(e);
+                });
+                
+                document.addEventListener('mousemove', (e) => {
+                    if (isDragging) {
+                        updateVolume(e);
+                    }
+                });
+                
+                document.addEventListener('mouseup', () => {
+                    isDragging = false;
+                });
+            }
+            
+            startAllStations() {
+                // Start playing the first song of each station
+                this.audioElements.forEach((stationAudios, stationIndex) => {
+                    if (stationAudios.length > 0 && stationAudios[0] !== null) {
+                        this.songStartTimes[stationIndex] = Date.now();
+                        
+                        // Add a small delay to help with loading
+                        setTimeout(() => {
+                            stationAudios[0].play().catch(e => {
+                                console.log(`Auto-play prevented for station ${stationIndex}:`, e.message);
+                                console.log('Click anywhere to start audio playback');
+                            });
+                        }, 100 * stationIndex); // Stagger the starts
+                    }
+                });
+            }
+            
+            playNextSong(stationIndex) {
+                const stationAudios = this.audioElements[stationIndex];
+                if (stationAudios.length === 0) return;
+                
+                this.currentSongIndex[stationIndex] = (this.currentSongIndex[stationIndex] + 1) % this.stations[stationIndex].songs.length;
+                const nextAudio = stationAudios[this.currentSongIndex[stationIndex]];
+                
+                if (nextAudio !== null) {
+                    this.songStartTimes[stationIndex] = Date.now();
+                    nextAudio.play().catch(e => {
+                        console.log(`Error playing next song for station ${stationIndex}:`, e.message);
+                    });
+                }
+                
+                // Update display if this is the current station
+                if (stationIndex === this.currentStation) {
+                    this.updateDisplay();
+                }
+            }
+            
+            changeStation(newStationIndex) {
+                if (newStationIndex === this.currentStation) return;
+                
+                // Play static sound and show overlay
+                this.playStaticSound();
+                
+                // Update button states
+                document.querySelectorAll('.station-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelector(`[data-station="${newStationIndex}"]`).classList.add('active');
+                
+                setTimeout(() => {
+                    this.currentStation = newStationIndex;
+                    this.updateAudioVolumes();
+                    this.updateDisplay();
+                    this.hideStaticOverlay();
+                }, 500);
+            }
+            
+            playStaticSound() {
+                document.getElementById('static-overlay').style.display = 'flex';
+                this.staticAudio.currentTime = 0;
+                this.staticAudio.play().catch(e => console.log('Static sound failed to play'));
+            }
+            
+            hideStaticOverlay() {
+                document.getElementById('static-overlay').style.display = 'none';
+            }
+            
+            updateAudioVolumes() {
+                this.audioElements.forEach((stationAudios, stationIndex) => {
+                    const volume = stationIndex === this.currentStation ? this.volume : 0;
+                    stationAudios.forEach(audio => {
+                        if (audio !== null) {
+                            audio.volume = volume;
+                        }
+                    });
+                });
+                
+                if (this.staticAudio) {
+                    this.staticAudio.volume = this.volume;
+                }
+            }
+            
+            updateDisplay() {
+                const station = this.stations[this.currentStation];
+                const currentSong = station.songs[this.currentSongIndex[this.currentStation]];
+                
+                document.getElementById('station-name').textContent = station.name;
+                document.getElementById('frequency').textContent = station.frequency;
+                document.getElementById('song-info').textContent = `♪ ${currentSong.title} - ${currentSong.artist} ♪`;
+            }
+            
+            updateVolumeDisplay() {
+                const volumeThumb = document.getElementById('volume-thumb');
+                const percentage = this.volume * 100;
+                volumeThumb.style.left = `${8 + (percentage * 0.84)}%`;
+            }
+        }
+        
+        // Initialize the radio when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            // Add a small delay to ensure everything is loaded
+            setTimeout(() => {
+                window.trenchersRadio = new TrenchersRadio();
+            }, 100);
+        });
+        
+        // Handle user interaction requirement for audio
+        document.addEventListener('click', function initAudio() {
+            console.log('User clicked - initializing audio...');
+            if (window.trenchersRadio && window.trenchersRadio.audioElements) {
+                // Try to play all audio elements to initialize them
+                window.trenchersRadio.audioElements.forEach((stationAudios, stationIndex) => {
+                    stationAudios.forEach((audio, songIndex) => {
+                        if (audio && audio.src && audio.src !== 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAAABAAARKwAAIhYAQACABAAZGF0YQAAAAA=') {
+                            audio.play().then(() => {
+                                console.log(`Initialized audio for station ${stationIndex}, song ${songIndex}`);
+                                // If this isn't the current station's current song, pause it
+                                if (stationIndex !== window.trenchersRadio.currentStation || 
+                                    songIndex !== window.trenchersRadio.currentSongIndex[stationIndex]) {
+                                    audio.pause();
+                                    audio.currentTime = 0;
+                                }
+                            }).catch(e => {
+                                console.log(`Failed to initialize station ${stationIndex}, song ${songIndex}:`, e.message);
+                            });
+                        }
+                    });
+                });
+                
+                // Show status message
+                const statusDiv = document.createElement('div');
+                statusDiv.style.cssText = `
+                    position: fixed; top: 20px; right: 20px; 
+                    background: rgba(0,0,0,0.8); color: white; 
+                    padding: 10px; border-radius: 5px; 
+                    font-family: Tahoma; font-size: 12px;
+                    z-index: 1001;
+                `;
+                statusDiv.textContent = 'Audio initialized - Check console for details';
+                document.body.appendChild(statusDiv);
+                setTimeout(() => statusDiv.remove(), 3000);
+            }
+            document.removeEventListener('click', initAudio);
+        });
+    </script>
+</body>
+</html>
