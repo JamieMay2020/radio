@@ -317,6 +317,16 @@
             50% { opacity: 0.5; }
             100% { opacity: 1; }
         }
+
+        .loading-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #00ff00;
+            font-size: 12px;
+            opacity: 0.8;
+        }
     </style>
 </head>
 <body>
@@ -337,7 +347,8 @@
                     <div class="lcd-display">
                         <div class="station-info" id="station-name">STATION 1</div>
                         <div class="frequency" id="frequency">101.5 FM</div>
-                        <div class="song-info" id="song-info">♪ Now Playing: Sample Song ♪</div>
+                        <div class="song-info" id="song-info">♪ Ready to Play ♪</div>
+                        <div class="loading-indicator" id="loading-indicator" style="display: none;">Loading...</div>
                     </div>
                 </div>
                 
@@ -378,197 +389,190 @@
             constructor() {
                 this.currentStation = 0;
                 this.volume = 0.7;
+                this.isInitialized = false;
+                this.userHasInteracted = false;
+                
+                // Predefined song lists for each station
                 this.stations = [
                     {
                         name: "STATION 1",
                         frequency: "101.5 FM",
                         folder: "station1",
-                        songs: []
+                        songs: [
+                            { title: "Rock Anthem", artist: "Station 1", filename: "song1.mp3" },
+                            { title: "Electric Dreams", artist: "Station 1", filename: "song2.mp3" },
+                            { title: "Highway Blues", artist: "Station 1", filename: "song3.mp3" }
+                        ]
                     },
                     {
                         name: "STATION 2", 
                         frequency: "102.3 FM",
                         folder: "station2",
-                        songs: []
+                        songs: [
+                            { title: "Pop Hit", artist: "Station 2", filename: "pop1.mp3" },
+                            { title: "Dance Floor", artist: "Station 2", filename: "pop2.mp3" },
+                            { title: "Summer Vibes", artist: "Station 2", filename: "pop3.mp3" }
+                        ]
                     },
                     {
                         name: "STATION 3",
                         frequency: "103.1 FM", 
                         folder: "station3",
-                        songs: []
+                        songs: [
+                            { title: "Hip Hop Beat", artist: "Station 3", filename: "hiphop1.mp3" },
+                            { title: "Urban Flow", artist: "Station 3", filename: "hiphop2.mp3" },
+                            { title: "Street Sound", artist: "Station 3", filename: "hiphop3.mp3" }
+                        ]
                     },
                     {
                         name: "STATION 4",
                         frequency: "104.7 FM",
-                        folder: "station4", 
-                        songs: []
+                        folder: "station4",
+                        songs: [
+                            { title: "Alternative Rock", artist: "Station 4", filename: "rock1.mp3" },
+                            { title: "Indie Vibes", artist: "Station 4", filename: "rock2.mp3" },
+                            { title: "Modern Edge", artist: "Station 4", filename: "rock3.mp3" }
+                        ]
                     },
                     {
                         name: "CLASSIC",
                         frequency: "105.5 FM",
                         folder: "classic",
-                        songs: []
+                        songs: [
+                            { title: "Classical Symphony", artist: "Classic FM", filename: "classical1.mp3" },
+                            { title: "Baroque Piece", artist: "Classic FM", filename: "classical2.mp3" },
+                            { title: "Chamber Music", artist: "Classic FM", filename: "classical3.mp3" }
+                        ]
                     },
                     {
                         name: "JAZZ FM",
                         frequency: "106.3 FM",
                         folder: "jazz",
-                        songs: []
+                        songs: [
+                            { title: "Smooth Jazz", artist: "Jazz FM", filename: "jazz1.mp3" },
+                            { title: "Blue Note", artist: "Jazz FM", filename: "jazz2.mp3" },
+                            { title: "Cool Breeze", artist: "Jazz FM", filename: "jazz3.mp3" }
+                        ]
                     }
                 ];
                 
                 this.audioElements = [];
                 this.currentSongIndex = new Array(this.stations.length).fill(0);
-                this.songStartTimes = new Array(this.stations.length).fill(0);
-                
-                // Static sound file (place in same directory as HTML)
-                this.staticSoundUrl = "./static.wav";
+                this.loadedStations = new Set();
                 
                 this.init();
             }
             
-            async init() {
-                await this.loadStationSongs();
-                this.createAudioElements();
+            init() {
+                // Set up UI immediately
                 this.setupEventListeners();
                 this.updateDisplay();
-                this.startAllStations();
                 this.updateVolumeDisplay();
+                
+                // Create silent audio elements first for immediate playback capability
+                this.createPlaceholderAudio();
+                
+                // Load actual audio files in background
+                this.loadAudioFiles();
+                
+                this.isInitialized = true;
             }
             
-            async loadStationSongs() {
-                // Simplified approach - try to load common filenames
-                const commonFilenames = [
-                    'jazz1.mp3', 'jazz2.mp3', 'jazz3.mp3', 'jazz4.mp3', 'jazz5.mp3',
-                    'song1.mp3', 'song2.mp3', 'song3.mp3', 'song4.mp3', 'song5.mp3',
-                    'rock1.mp3', 'rock2.mp3', 'rock3.mp3', 'rock4.mp3', 'rock5.mp3',
-                    'pop1.mp3', 'pop2.mp3', 'pop3.mp3', 'pop4.mp3', 'pop5.mp3',
-                    'hiphop1.mp3', 'hiphop2.mp3', 'hiphop3.mp3', 'hiphop4.mp3', 'hiphop5.mp3',
-                    'classical1.mp3', 'classical2.mp3', 'classical3.mp3', 'classical4.mp3', 'classical5.mp3',
-                    '1.mp3', '2.mp3', '3.mp3', '4.mp3', '5.mp3'
-                ];
-
-                // Load songs for each station
-                for (let i = 0; i < this.stations.length; i++) {
-                    const station = this.stations[i];
-                    const folder = station.folder;
-                    
-                    // Try different filename patterns
-                    for (const filename of commonFilenames) {
-                        const filepath = `./${folder}/${filename}`;
-                        
-                        try {
-                            // Test if file exists by creating audio element
-                            const testAudio = new Audio();
-                            const canLoad = await new Promise((resolve) => {
-                                const timeout = setTimeout(() => resolve(false), 1000);
-                                
-                                testAudio.addEventListener('canplaythrough', () => {
-                                    clearTimeout(timeout);
-                                    resolve(true);
-                                }, { once: true });
-                                
-                                testAudio.addEventListener('error', () => {
-                                    clearTimeout(timeout);
-                                    resolve(false);
-                                }, { once: true });
-                                
-                                testAudio.src = filepath;
-                                testAudio.load();
-                            });
-                            
-                            if (canLoad) {
-                                const title = filename.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
-                                station.songs.push({
-                                    title: title,
-                                    artist: station.name,
-                                    url: filepath,
-                                    filename: filename
-                                });
-                                console.log(`Loaded: ${filepath}`);
-                            }
-                        } catch (error) {
-                            // File doesn't exist or can't be loaded
-                        }
-                    }
-                    
-                    // If no songs were loaded, add sample songs that will work
-                    if (station.songs.length === 0) {
-                        // Add some test songs that should work
-                        station.songs = [
-                            {
-                                title: `${station.name} - Track 1`,
-                                artist: station.name,
-                                url: null, // Will be handled as silent
-                                filename: null
-                            },
-                            {
-                                title: `${station.name} - Track 2`,
-                                artist: station.name,
-                                url: null,
-                                filename: null
-                            }
-                        ];
-                        console.log(`No audio files found for ${station.name}. Using placeholder tracks.`);
-                    }
-                }
-            }
-            
-            createAudioElements() {
+            createPlaceholderAudio() {
+                // Create silent placeholder audio for immediate functionality
+                const silentAudioData = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAAABAAARKwAAIhYAQACABAAZGF0YQAAAAA=';
+                
                 this.stations.forEach((station, stationIndex) => {
                     const stationAudios = [];
                     station.songs.forEach((song, songIndex) => {
-                        if (song.url) {
-                            const audio = new Audio();
-                            audio.src = song.url;
-                            audio.loop = false;
-                            audio.preload = 'metadata';
-                            audio.volume = stationIndex === this.currentStation ? this.volume : 0;
-                            audio.crossOrigin = 'anonymous'; // Help with CORS issues
-                            
-                            // Add error handling
-                            audio.addEventListener('error', (e) => {
-                                console.error(`Error loading audio: ${song.url}`, e);
-                            });
-                            
-                            audio.addEventListener('canplay', () => {
-                                console.log(`Audio ready: ${song.url}`);
-                            });
-                            
-                            // When a song ends, play the next one
-                            audio.addEventListener('ended', () => {
-                                this.playNextSong(stationIndex);
-                            });
-                            
-                            stationAudios.push(audio);
-                        } else {
-                            // Create a silent audio element for placeholders
-                            const silentAudio = new Audio();
-                            silentAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAAABAAARKwAAIhYAQACABAAZGF0YQAAAAA='; // 1 second of silence
-                            silentAudio.loop = false;
-                            silentAudio.volume = 0;
-                            
-                            silentAudio.addEventListener('ended', () => {
-                                this.playNextSong(stationIndex);
-                            });
-                            
-                            stationAudios.push(silentAudio);
-                        }
+                        const audio = new Audio();
+                        audio.src = silentAudioData;
+                        audio.loop = false;
+                        audio.volume = stationIndex === this.currentStation ? this.volume : 0;
+                        
+                        audio.addEventListener('ended', () => {
+                            this.playNextSong(stationIndex);
+                        });
+                        
+                        stationAudios.push(audio);
                     });
                     this.audioElements.push(stationAudios);
                 });
                 
-                // Create static sound element
+                // Create static audio
                 this.staticAudio = new Audio();
-                this.staticAudio.src = this.staticSoundUrl;
+                this.staticAudio.src = silentAudioData;
                 this.staticAudio.volume = this.volume;
+            }
+            
+            async loadAudioFiles() {
+                console.log('Loading audio files in background...');
                 
-                // Add error handling for static sound
-                this.staticAudio.addEventListener('error', () => {
-                    console.log('Static sound file not found, using silent placeholder');
-                    // Create silent static as fallback
-                    this.staticAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAAABAAARKwAAIhYAQACABAAZGF0YQAAAAA=';
-                });
+                // Load audio files for each station without blocking
+                for (let stationIndex = 0; stationIndex < this.stations.length; stationIndex++) {
+                    const station = this.stations[stationIndex];
+                    
+                    // Load songs for this station
+                    for (let songIndex = 0; songIndex < station.songs.length; songIndex++) {
+                        const song = station.songs[songIndex];
+                        const filepath = `./${station.folder}/${song.filename}`;
+                        
+                        try {
+                            const audio = new Audio();
+                            audio.crossOrigin = 'anonymous';
+                            audio.preload = 'metadata';
+                            
+                            // Set up event listeners before loading
+                            audio.addEventListener('canplay', () => {
+                                // Replace the placeholder audio with the real one
+                                const oldAudio = this.audioElements[stationIndex][songIndex];
+                                
+                                // Copy volume and set up ended event
+                                audio.volume = oldAudio.volume;
+                                audio.addEventListener('ended', () => {
+                                    this.playNextSong(stationIndex);
+                                });
+                                
+                                // Replace in array
+                                this.audioElements[stationIndex][songIndex] = audio;
+                                
+                                // If this is the current playing song, start it
+                                if (stationIndex === this.currentStation && 
+                                    songIndex === this.currentSongIndex[stationIndex] && 
+                                    this.userHasInteracted) {
+                                    audio.play().catch(e => console.log('Playback failed:', e.message));
+                                }
+                                
+                                console.log(`Loaded: ${station.name} - ${song.title}`);
+                            });
+                            
+                            audio.addEventListener('error', () => {
+                                console.log(`Could not load: ${filepath}`);
+                            });
+                            
+                            // Start loading
+                            audio.src = filepath;
+                            
+                        } catch (error) {
+                            console.log(`Error loading ${filepath}:`, error);
+                        }
+                    }
+                    
+                    this.loadedStations.add(stationIndex);
+                }
+                
+                // Try to load static sound
+                try {
+                    const staticAudio = new Audio();
+                    staticAudio.addEventListener('canplay', () => {
+                        this.staticAudio = staticAudio;
+                        this.staticAudio.volume = this.volume;
+                        console.log('Static sound loaded');
+                    });
+                    staticAudio.src = './static.wav';
+                } catch (error) {
+                    console.log('Static sound not available');
+                }
             }
             
             setupEventListeners() {
@@ -580,7 +584,14 @@
                     });
                 });
                 
-                // Volume control
+                // Volume control - set up immediately
+                this.setupVolumeControl();
+                
+                // Handle first user interaction
+                document.addEventListener('click', this.handleFirstInteraction.bind(this), { once: true });
+            }
+            
+            setupVolumeControl() {
                 const volumeControl = document.getElementById('volume-control');
                 const volumeThumb = document.getElementById('volume-thumb');
                 
@@ -598,6 +609,7 @@
                 volumeControl.addEventListener('mousedown', (e) => {
                     isDragging = true;
                     updateVolume(e);
+                    e.preventDefault();
                 });
                 
                 document.addEventListener('mousemove', (e) => {
@@ -611,35 +623,37 @@
                 });
             }
             
-            startAllStations() {
-                // Start playing the first song of each station
-                this.audioElements.forEach((stationAudios, stationIndex) => {
-                    if (stationAudios.length > 0 && stationAudios[0] !== null) {
-                        this.songStartTimes[stationIndex] = Date.now();
-                        
-                        // Add a small delay to help with loading
-                        setTimeout(() => {
-                            stationAudios[0].play().catch(e => {
-                                console.log(`Auto-play prevented for station ${stationIndex}:`, e.message);
-                                console.log('Click anywhere to start audio playback');
-                            });
-                        }, 100 * stationIndex); // Stagger the starts
-                    }
-                });
+            handleFirstInteraction() {
+                this.userHasInteracted = true;
+                console.log('User interacted - starting audio...');
+                
+                // Start playing the current station
+                const currentAudio = this.audioElements[this.currentStation][this.currentSongIndex[this.currentStation]];
+                if (currentAudio) {
+                    currentAudio.play().catch(e => console.log('Initial playback failed:', e.message));
+                }
+                
+                this.updateDisplay();
             }
             
             playNextSong(stationIndex) {
                 const stationAudios = this.audioElements[stationIndex];
                 if (stationAudios.length === 0) return;
                 
+                // Stop current song
+                const currentAudio = stationAudios[this.currentSongIndex[stationIndex]];
+                if (currentAudio) {
+                    currentAudio.pause();
+                    currentAudio.currentTime = 0;
+                }
+                
+                // Move to next song
                 this.currentSongIndex[stationIndex] = (this.currentSongIndex[stationIndex] + 1) % this.stations[stationIndex].songs.length;
                 const nextAudio = stationAudios[this.currentSongIndex[stationIndex]];
                 
-                if (nextAudio !== null) {
-                    this.songStartTimes[stationIndex] = Date.now();
-                    nextAudio.play().catch(e => {
-                        console.log(`Error playing next song for station ${stationIndex}:`, e.message);
-                    });
+                // Play next song if user has interacted and this is the current station
+                if (nextAudio && this.userHasInteracted && stationIndex === this.currentStation) {
+                    nextAudio.play().catch(e => console.log('Next song playback failed:', e.message));
                 }
                 
                 // Update display if this is the current station
@@ -650,6 +664,12 @@
             
             changeStation(newStationIndex) {
                 if (newStationIndex === this.currentStation) return;
+                
+                // Stop current station
+                const currentAudio = this.audioElements[this.currentStation][this.currentSongIndex[this.currentStation]];
+                if (currentAudio) {
+                    currentAudio.pause();
+                }
                 
                 // Play static sound and show overlay
                 this.playStaticSound();
@@ -663,13 +683,23 @@
                     this.updateAudioVolumes();
                     this.updateDisplay();
                     this.hideStaticOverlay();
+                    
+                    // Start playing new station if user has interacted
+                    if (this.userHasInteracted) {
+                        const newAudio = this.audioElements[this.currentStation][this.currentSongIndex[this.currentStation]];
+                        if (newAudio) {
+                            newAudio.play().catch(e => console.log('Station change playback failed:', e.message));
+                        }
+                    }
                 }, 500);
             }
             
             playStaticSound() {
                 document.getElementById('static-overlay').style.display = 'flex';
-                this.staticAudio.currentTime = 0;
-                this.staticAudio.play().catch(e => console.log('Static sound failed to play'));
+                if (this.staticAudio) {
+                    this.staticAudio.currentTime = 0;
+                    this.staticAudio.play().catch(e => console.log('Static sound failed to play'));
+                }
             }
             
             hideStaticOverlay() {
@@ -680,7 +710,7 @@
                 this.audioElements.forEach((stationAudios, stationIndex) => {
                     const volume = stationIndex === this.currentStation ? this.volume : 0;
                     stationAudios.forEach(audio => {
-                        if (audio !== null) {
+                        if (audio) {
                             audio.volume = volume;
                         }
                     });
@@ -697,7 +727,12 @@
                 
                 document.getElementById('station-name').textContent = station.name;
                 document.getElementById('frequency').textContent = station.frequency;
-                document.getElementById('song-info').textContent = `♪ ${currentSong.title} - ${currentSong.artist} ♪`;
+                
+                if (this.userHasInteracted) {
+                    document.getElementById('song-info').textContent = `♪ ${currentSong.title} - ${currentSong.artist} ♪`;
+                } else {
+                    document.getElementById('song-info').textContent = '♪ Click to Start Playing ♪';
+                }
             }
             
             updateVolumeDisplay() {
@@ -709,48 +744,7 @@
         
         // Initialize the radio when the page loads
         document.addEventListener('DOMContentLoaded', () => {
-            // Add a small delay to ensure everything is loaded
-            setTimeout(() => {
-                window.trenchersRadio = new TrenchersRadio();
-            }, 100);
-        });
-        
-        // Handle user interaction requirement for audio
-        document.addEventListener('click', function initAudio() {
-            console.log('User clicked - initializing audio...');
-            if (window.trenchersRadio && window.trenchersRadio.audioElements) {
-                // Try to play all audio elements to initialize them
-                window.trenchersRadio.audioElements.forEach((stationAudios, stationIndex) => {
-                    stationAudios.forEach((audio, songIndex) => {
-                        if (audio && audio.src && audio.src !== 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAAABAAARKwAAIhYAQACABAAZGF0YQAAAAA=') {
-                            audio.play().then(() => {
-                                console.log(`Initialized audio for station ${stationIndex}, song ${songIndex}`);
-                                // If this isn't the current station's current song, pause it
-                                if (stationIndex !== window.trenchersRadio.currentStation || 
-                                    songIndex !== window.trenchersRadio.currentSongIndex[stationIndex]) {
-                                    audio.pause();
-                                    audio.currentTime = 0;
-                                }
-                            }).catch(e => {
-                                console.log(`Failed to initialize station ${stationIndex}, song ${songIndex}:`, e.message);
-                            });
-                        }
-                    });
-                });
-                
-                // Show status message
-                const statusDiv = document.createElement('div');
-                statusDiv.style.cssText = `
-                    position: fixed; top: 20px; right: 20px; 
-                    background: rgba(0,0,0,0.8); color: white; 
-                    padding: 10px; border-radius: 5px; 
-                    font-family: Tahoma; font-size: 12px;
-                    z-index: 1001;
-                `;
-                document.body.appendChild(statusDiv);
-                setTimeout(() => statusDiv.remove(), 3000);
-            }
-            document.removeEventListener('click', initAudio);
+            window.trenchersRadio = new TrenchersRadio();
         });
     </script>
 </body>
